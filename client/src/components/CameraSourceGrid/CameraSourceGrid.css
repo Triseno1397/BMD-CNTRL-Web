@@ -1,0 +1,146 @@
+/* Grid container */
+.camera-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--atem-panel-bg);
+  border-radius: 6px;
+}
+
+.camera-grid__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--atem-section-label);
+  text-transform: uppercase;
+}
+
+.camera-grid__hint {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--atem-section-label);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Button grid - 8 columns for cameras 1-8 */
+.camera-grid__buttons {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .camera-grid__buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .camera-grid__buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Camera button styling - ATEM Design System */
+.camera-button {
+  background: var(--atem-btn-bg);
+  border: 1px solid var(--atem-btn-border);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.6);
+  padding: 10px 6px;
+  min-height: 48px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--atem-btn-text);
+  transition: all 0.08s ease;
+}
+
+.camera-button:focus {
+  outline: 2px solid var(--color-preview);
+  outline-offset: 2px;
+}
+
+.camera-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.camera-button:hover:not(:disabled) {
+  background: var(--atem-btn-hover-bg);
+  border-color: var(--atem-btn-hover-border);
+}
+
+.camera-button:active:not(:disabled) {
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+}
+
+/* Program state - red highlight with glow */
+.camera-button--program {
+  background: var(--color-program);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(204,0,0,0.6);
+  border-color: var(--color-program);
+}
+
+.camera-button--program:hover:not(:disabled) {
+  background: #dd1111;
+  box-shadow: 0 0 12px rgba(204,0,0,0.8);
+}
+
+/* Preview state - green highlight with glow */
+.camera-button--preview {
+  background: var(--color-preview);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(26,138,26,0.5);
+  border-color: var(--color-preview);
+}
+
+.camera-button--preview:hover:not(:disabled) {
+  background: #1f9f1f;
+  box-shadow: 0 0 12px rgba(26,138,26,0.7);
+}
+
+/* Edge case: both PGM and PVW (shouldn't happen, but program wins) */
+.camera-button--program.camera-button--preview {
+  background: var(--color-program);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(204,0,0,0.6);
+}
+
+.camera-button__name {
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+/* Mobile: larger touch targets */
+@media (max-width: 768px) {
+  .camera-button {
+    min-height: 56px;
+    font-size: 12px;
+    padding: 12px 8px;
+  }
+}
+
+/* Loading and error states */
+.camera-grid__loading,
+.camera-grid__error {
+  padding: 24px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--atem-btn-text);
+  background: var(--atem-panel-bg);
+  border-radius: 6px;
+}
+
+.camera-grid__error {
+  color: #ff6666;
+  border: 1px solid var(--color-program);
+}

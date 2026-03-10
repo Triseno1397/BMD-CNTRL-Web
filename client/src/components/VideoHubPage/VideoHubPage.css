@@ -1,0 +1,52 @@
+.vh-page {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  min-height: 100%;
+}
+
+.vh-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.vh-page__device {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  letter-spacing: 0.05em;
+}
+
+.vh-page__section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--atem-section-label, #888);
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+.vh-page__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.vh-page__loading,
+.vh-page__offline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #6b6b6b;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  min-height: 200px;
+}
+
+.vh-page__offline {
+  color: #ff4136;
+}

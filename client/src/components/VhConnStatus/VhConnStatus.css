@@ -1,0 +1,40 @@
+.vh-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.vh-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vh-status--online .vh-status__dot {
+  background: #2ecc40;
+  box-shadow: 0 0 4px #2ecc40;
+}
+
+.vh-status--offline .vh-status__dot {
+  background: #ff4136;
+  box-shadow: 0 0 4px #ff4136;
+}
+
+.vh-status__text {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vh-status--online .vh-status__text {
+  color: #2ecc40;
+}
+
+.vh-status--offline .vh-status__text {
+  color: #ff4136;
+}

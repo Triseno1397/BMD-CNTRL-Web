@@ -1,0 +1,30 @@
+{
+  "name": "atem-control",
+  "version": "0.1.0",
+  "description": "Professional-grade ATEM switcher control application",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "build": "cd client && npm install && npm run build"
+  },
+  "keywords": [
+    "atem",
+    "blackmagic",
+    "video",
+    "switcher",
+    "production"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "atem-connection": "^3.4.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

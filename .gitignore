@@ -13,6 +13,16 @@ __pycache__/
 .venv/
 venv/
 
+# Node.js
+node_modules/
+*.log
+npm-debug.log*
+package-lock.json
+
+# Build output
+client/dist/
+
 # OS
 .DS_Store
 Thumbs.db
+nul

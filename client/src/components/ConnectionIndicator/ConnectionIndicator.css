@@ -1,0 +1,90 @@
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.connection-indicator__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.connection-indicator__text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Connected state: green, solid */
+.connection-indicator--connected .connection-indicator__dot {
+  background: #00cc00;
+  box-shadow: 0 0 8px rgba(0, 204, 0, 0.6);
+}
+
+.connection-indicator--connected .connection-indicator__text {
+  color: #00cc00;
+}
+
+/* Connecting state: yellow, pulsing */
+.connection-indicator--connecting .connection-indicator__dot {
+  background: #ffaa00;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.connection-indicator--connecting .connection-indicator__text {
+  color: #ffaa00;
+}
+
+/* Reconnecting state: yellow, pulsing (same as connecting) */
+.connection-indicator--reconnecting .connection-indicator__dot {
+  background: #ffaa00;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.connection-indicator--reconnecting .connection-indicator__text {
+  color: #ffaa00;
+}
+
+/* Disconnected state: red, solid */
+.connection-indicator--disconnected .connection-indicator__dot {
+  background: #ff3333;
+  box-shadow: 0 0 8px rgba(255, 51, 51, 0.6);
+}
+
+.connection-indicator--disconnected .connection-indicator__text {
+  color: #ff3333;
+}
+
+/* Pulsing animation for connecting/reconnecting */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Mobile: slightly larger for better visibility */
+@media (max-width: 768px) {
+  .connection-indicator {
+    padding: 8px 14px;
+  }
+
+  .connection-indicator__dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .connection-indicator__text {
+    font-size: 13px;
+  }
+}

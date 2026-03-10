@@ -1,0 +1,43 @@
+.atem-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  position: relative;
+}
+
+.atem-page__error {
+  background: #3d1a1a;
+  border: 1px solid #cc0000;
+  border-radius: 4px;
+  padding: 12px;
+  color: #ff6b6b;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.atem-page__bottom-row {
+  display: flex;
+  gap: 12px;
+}
+
+.atem-page__keyer-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.atem-page__special-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Mobile: Stack the bottom row */
+@media (max-width: 480px) {
+  .atem-page__bottom-row {
+    flex-direction: column;
+  }
+}
