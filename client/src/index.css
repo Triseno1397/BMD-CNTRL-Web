@@ -19,6 +19,37 @@
   --atem-panel-bg: #1e1e1e;
   --atem-section-label: #888888;
 
+  /* HyperDeck Design System - BMD Hardware Aesthetic */
+  --hd-chassis: #1a1a1a;
+  --hd-panel: #242424;
+  --hd-recessed: #1e1e1e;
+  --hd-groove-dark: #111111;
+  --hd-groove-light: #333333;
+
+  /* HyperDeck 3D Button System */
+  --hd-btn-face: #3a3a3a;
+  --hd-btn-highlight: #4a4a4a;
+  --hd-btn-shadow: #2a2a2a;
+  --hd-btn-border: #4a4a4a;
+  --hd-btn-border-dark: #2a2a2a;
+  --hd-btn-pressed: #2e2e2e;
+
+  /* HyperDeck LED Colors */
+  --hd-led-red: #cc3333;
+  --hd-led-red-glow: #ff4444;
+  --hd-led-red-dim: #661a1a;
+  --hd-led-green: #33aa55;
+  --hd-led-green-glow: #44dd66;
+  --hd-led-amber: #cc8833;
+  --hd-led-amber-glow: #ffaa44;
+
+  /* HyperDeck Typography */
+  --hd-text-primary: #d4d4d4;
+  --hd-text-secondary: #888888;
+  --hd-text-dim: #555555;
+  --hd-font-label: 'Helvetica Neue', 'Arial', sans-serif;
+  --hd-font-mono: 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
+
   /* Typography */
   --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
