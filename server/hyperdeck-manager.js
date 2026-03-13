@@ -601,6 +601,7 @@ class HyperDeckManager extends EventEmitter {
 
   /**
    * Send raw command string to a deck
+   * Includes 5-second timeout to prevent hanging on unresponsive decks
    */
   async sendRawCommand(deckId, command) {
     const socket = this.sockets.get(deckId);
@@ -610,9 +611,32 @@ class HyperDeckManager extends EventEmitter {
       throw new Error(`Deck ${deckId} is not connected`);
     }
 
+    const COMMAND_TIMEOUT_MS = 5000;
+
     return new Promise((resolve, reject) => {
       const pending = this.pendingCommands.get(deckId);
-      pending.push({ resolve, reject });
+
+      // Create timeout to reject if no response
+      const timeoutId = setTimeout(() => {
+        // Remove this pending command from queue
+        const idx = pending.findIndex(p => p.timeoutId === timeoutId);
+        if (idx !== -1) {
+          pending.splice(idx, 1);
+        }
+        reject(new Error(`Command timed out after ${COMMAND_TIMEOUT_MS}ms: ${command}`));
+      }, COMMAND_TIMEOUT_MS);
+
+      // Wrap resolve/reject to clear timeout
+      const wrappedResolve = (result) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      };
+      const wrappedReject = (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      };
+
+      pending.push({ resolve: wrappedResolve, reject: wrappedReject, timeoutId });
 
       socket.write(command + '\r\n');
     });

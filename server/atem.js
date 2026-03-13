@@ -151,8 +151,22 @@ class ATEMManager extends EventEmitter {
       console.log('  Inputs:', Object.keys(this.state.inputs || {}).length);
       console.log('  Note: State may be incomplete, waiting for stateChanged events...');
     } catch (error) {
-      console.error('Failed to connect to ATEM:', error.message);
-      throw error;
+      console.error('✗ Failed to connect to ATEM:', error.message);
+      console.error('  ATEM will operate in disconnected state.');
+      console.error('  The atem-connection library will attempt to reconnect automatically.');
+
+      // Initialize empty state so server can continue
+      this.state = {
+        video: {
+          mixEffects: [],
+          downstreamKeyers: [],
+          auxilliaries: []
+        },
+        inputs: {}
+      };
+
+      // Emit connection error event for UI to display
+      this.emit('connectionError', error.message);
     }
   }
 

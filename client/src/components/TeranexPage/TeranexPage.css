@@ -1,0 +1,533 @@
+/**
+ * TeranexPage.css
+ * BMD Hardware Aesthetic - Teranex AV Front Panel Style
+ *
+ * Colors:
+ * - dim (inactive): #666670 text
+ * - selected (green): #00CC66 glow
+ * - confirmed (blue): #4488FF glow
+ * - warning (amber): #FF8800 glow
+ * - unavailable: opacity 0.35
+ */
+
+/* === Page Container === */
+.tnx-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: #141416;
+  padding: 12px;
+  gap: 12px;
+}
+
+/* === Empty State === */
+.tnx-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  color: #888;
+  flex: 1;
+}
+
+.tnx-page__empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.tnx-page__empty-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+}
+
+.tnx-page__empty h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #aaa;
+  margin: 0 0 8px 0;
+}
+
+.tnx-page__empty p {
+  font-size: 13px;
+  margin: 0 0 16px 0;
+}
+
+.tnx-page__empty code {
+  display: block;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+  background: #222;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  color: #4a9eff;
+}
+
+/* === Unit Tabs === */
+.tnx-unit-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tnx-unit-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #aaa;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tnx-unit-tab:hover:not(:disabled) {
+  background: linear-gradient(180deg, #444 0%, #333 100%);
+}
+
+.tnx-unit-tab--active {
+  background: linear-gradient(180deg, #2a3a4a 0%, #1a2a3a 100%);
+  border-color: #4488FF;
+  box-shadow: 0 0 8px rgba(68, 136, 255, 0.4);
+  color: #fff;
+}
+
+.tnx-unit-tab--disconnected {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tnx-unit-tab__led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #444;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.tnx-unit-tab__led--connected {
+  background: #00CC66;
+  box-shadow: 0 0 6px rgba(0, 204, 102, 0.6);
+}
+
+.tnx-unit-tab__name {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* === Detail Panel === */
+.tnx-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* === Header === */
+.tnx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+.tnx-header__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tnx-header__edit {
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.tnx-header__edit:hover {
+  color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.tnx-header__edit svg {
+  width: 100%;
+  height: 100%;
+}
+
+.tnx-header__input {
+  flex: 1;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #222;
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+.tnx-header__model {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px;
+  color: #666;
+}
+
+/* === LCD Display === */
+.tnx-lcd {
+  background: linear-gradient(180deg, #0a1a0a 0%, #0f1f0f 50%, #0a1a0a 100%);
+  border: 2px solid #222;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Scan line effect */
+.tnx-lcd::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+  pointer-events: none;
+}
+
+.tnx-lcd__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 13px;
+  color: #00ff66;
+  padding: 4px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.tnx-lcd__row--warning {
+  color: #ff8800;
+}
+
+.tnx-lcd__row--error {
+  color: #ff4444;
+}
+
+.tnx-lcd__label {
+  width: 40px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.tnx-lcd__value {
+  flex: 1;
+  font-weight: 500;
+}
+
+.tnx-lcd__source {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* === Sections === */
+.tnx-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tnx-section__label {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+/* === Buttons === */
+.tnx-btn {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dim (inactive) state */
+.tnx-btn--dim {
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 50%, #2a2a2a 100%);
+  color: #666670;
+  border-color: #333;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.tnx-btn--dim:hover:not(:disabled) {
+  background: linear-gradient(180deg, #555 0%, #444 50%, #333 100%);
+  color: #888;
+}
+
+/* Confirmed (blue) state */
+.tnx-btn--confirmed {
+  background: linear-gradient(180deg, #2a4a6a 0%, #1a3a5a 50%, #0a2a4a 100%);
+  color: #4488FF;
+  border-color: #4488FF;
+  box-shadow: 0 0 8px rgba(68, 136, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Selected (green) state */
+.tnx-btn--selected {
+  background: linear-gradient(180deg, #1a4a2a 0%, #0a3a1a 50%, #002a0a 100%);
+  color: #00CC66;
+  border-color: #00CC66;
+  box-shadow: 0 0 8px rgba(0, 204, 102, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Warning (amber) state */
+.tnx-btn--warning {
+  background: linear-gradient(180deg, #4a3a1a 0%, #3a2a0a 50%, #2a1a00 100%);
+  color: #FF8800;
+  border-color: #FF8800;
+  box-shadow: 0 0 8px rgba(255, 136, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Unavailable state */
+.tnx-btn--unavailable {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Readonly state (input mode) */
+.tnx-btn--readonly:not(.tnx-btn--confirmed) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Small button variant */
+.tnx-btn--small {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+/* === Button Layouts === */
+.tnx-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.tnx-btn-row .tnx-btn {
+  flex: 1;
+}
+
+.tnx-btn-row--compact {
+  gap: 4px;
+}
+
+.tnx-btn-row--compact .tnx-btn {
+  flex: 0 0 auto;
+  min-width: 48px;
+}
+
+.tnx-btn-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.tnx-btn-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tnx-btn-grid--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.tnx-btn-grid--6 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (min-width: 400px) {
+  .tnx-btn-grid--6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* === Subsection === */
+.tnx-subsection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.tnx-subsection__label {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #555;
+  min-width: 60px;
+}
+
+/* === Slider === */
+.tnx-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.tnx-slider__input {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.tnx-slider__input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(180deg, #555 0%, #333 100%);
+  border: 2px solid #666;
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.tnx-slider__input::-webkit-slider-thumb:hover {
+  background: linear-gradient(180deg, #666 0%, #444 100%);
+  border-color: #888;
+}
+
+.tnx-slider__input:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.tnx-slider__value {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+  color: #888;
+  min-width: 24px;
+  text-align: right;
+}
+
+/* === Groove Separator === */
+.tnx-groove {
+  height: 1px;
+  background: #111;
+  box-shadow: 0 1px 0 rgba(51, 51, 51, 0.3);
+  margin: 4px 0;
+}
+
+/* === Status Panel === */
+.tnx-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+}
+
+.tnx-status__leds {
+  display: flex;
+  gap: 16px;
+}
+
+.tnx-status__led {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tnx-status__led::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.tnx-status__led--green::before {
+  background: #00CC66;
+  box-shadow: 0 0 8px rgba(0, 204, 102, 0.6);
+}
+
+.tnx-status__led--red::before {
+  background: #ff4444;
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+}
+
+.tnx-status__led--blue::before {
+  background: #4488FF;
+  box-shadow: 0 0 8px rgba(68, 136, 255, 0.6);
+}
+
+.tnx-status__led span {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.tnx-status__info {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 10px;
+  color: #555;
+}

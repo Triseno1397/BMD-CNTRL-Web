@@ -1,8 +1,10 @@
 import { EventEmitter } from 'events';
+import config from './config.js';
 
 /**
  * Mock HyperDeck Manager
- * Simulates 2 HyperDeck recorders for development without hardware
+ * Simulates HyperDeck recorders for development without hardware
+ * Reads deck configuration from environment (HYPERDECK_N_IP/NAME)
  *
  * State shape per deck:
  * {
@@ -34,13 +36,22 @@ class HyperDeckMock extends EventEmitter {
 
   /**
    * Initialize mock HyperDeck decks
+   * Reads configuration from config.hyperdecks if available,
+   * otherwise creates 2 default mock decks
    */
   async connect() {
-    // Create 2 mock decks
-    this.decks = [
-      this.createMockDeck(0, 'Record A', '192.168.1.241'),
-      this.createMockDeck(1, 'Record B', '192.168.1.242')
-    ];
+    // Read from config if any decks are configured
+    if (config.hyperdecks && config.hyperdecks.length > 0) {
+      this.decks = config.hyperdecks.map((deckConfig) =>
+        this.createMockDeck(deckConfig.index, deckConfig.name, deckConfig.ip)
+      );
+    } else {
+      // Default: create 2 mock decks if no config
+      this.decks = [
+        this.createMockDeck(0, 'Record A', '192.168.1.241'),
+        this.createMockDeck(1, 'Record B', '192.168.1.242')
+      ];
+    }
 
     console.log(`✓ HyperDeck connected (Mock: ${this.decks.length} decks)`);
 

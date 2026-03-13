@@ -3,10 +3,10 @@ import { connectATEM, sendCommand as wsSendCommand } from '../lib/websocket';
 
 /**
  * Custom hook for device state synchronization
- * Connects to WebSocket server and maintains current ATEM, VideoHub, and HyperDeck state
+ * Connects to WebSocket server and maintains current ATEM, VideoHub, HyperDeck, and Teranex state
  *
  * @param {string} wsUrlParam - WebSocket URL (default: auto-detected based on current hostname)
- * @returns {Object} { atemState, videohubState, hyperdecksState, connectionStatus, error, commandError, sendCommand, ws }
+ * @returns {Object} { atemState, videohubState, hyperdecksState, teranexesState, deviceStatus, configuredDevices, connectionStatus, error, commandError, sendCommand, ws }
  */
 export function useATEMState(wsUrlParam) {
   // Auto-detect WebSocket URL based on current host (includes port)
@@ -17,6 +17,9 @@ export function useATEMState(wsUrlParam) {
   const [atemState, setAtemState] = useState(null);
   const [videohubState, setVideohubState] = useState(null);
   const [hyperdecksState, setHyperdecksState] = useState(null);
+  const [teranexesState, setTeranexesState] = useState(null);
+  const [deviceStatus, setDeviceStatus] = useState(null);
+  const [configuredDevices, setConfiguredDevices] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [error, setError] = useState(null);
   const [commandError, setCommandError] = useState(null);
@@ -31,7 +34,7 @@ export function useATEMState(wsUrlParam) {
         setError(null);
       },
       onState: (data) => {
-        // New format: data = { atem: {...}, videohub: {...}, hyperdecks: [...] }
+        // Format: data = { atem: {...}, videohub: {...}, hyperdecks: [...], teranexes: [...], deviceStatus: {...}, configuredDevices: [...] }
         if (data.atem !== undefined) {
           setAtemState(data.atem);
         }
@@ -40,6 +43,15 @@ export function useATEMState(wsUrlParam) {
         }
         if (data.hyperdecks !== undefined) {
           setHyperdecksState(data.hyperdecks);
+        }
+        if (data.teranexes !== undefined) {
+          setTeranexesState(data.teranexes);
+        }
+        if (data.deviceStatus !== undefined) {
+          setDeviceStatus(data.deviceStatus);
+        }
+        if (data.configuredDevices !== undefined) {
+          setConfiguredDevices(data.configuredDevices);
         }
       },
       onClose: () => {
@@ -84,6 +96,9 @@ export function useATEMState(wsUrlParam) {
     atemState,
     videohubState,
     hyperdecksState,
+    teranexesState,
+    deviceStatus,
+    configuredDevices,
     connectionStatus,
     error,
     commandError,

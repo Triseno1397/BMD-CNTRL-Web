@@ -2,6 +2,7 @@
   /* ATEM color palette */
   --color-chassis: #1a1a1a;
   --color-chassis-alt: #222;
+  --color-chassis-light: #222;
   --color-button-idle: #d0d0d0;
   --color-program: #cc0000;      /* Red for program - ATEM style */
   --color-preview: #1a8a1a;      /* Green for preview - ATEM style */
@@ -9,6 +10,14 @@
   --color-videohub-accent: #4a9eff; /* Blue for VideoHub */
   --color-text-dark: #000;
   --color-text-light: #fff;
+
+  /* Status colors */
+  --color-green: #4caf50;
+  --color-amber: #f5a623;
+  --color-red: #f44336;
+  --color-border: #333;
+  --color-text-secondary: #888;
+  --color-text: #fff;
 
   /* ATEM Button Design System */
   --atem-btn-bg: #3a3a3a;

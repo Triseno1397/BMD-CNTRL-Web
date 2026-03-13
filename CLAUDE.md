@@ -40,23 +40,24 @@ Mirror ATEM hardware aesthetics:
 ## Architecture
 
 ### Stack
-- **Frontend:** React (Vite) — component-per-feature, tab-based navigation
+- **Frontend:** React (Vite) — component-per-feature, hamburger drawer navigation
 - **Backend:** Node.js (Express) — thin HTTP + WebSocket bridge to BMD devices
 - **ATEM Communication:** `atem-connection` npm library (official Blackmagic protocol)
 - **VideoHub Communication:** Custom TCP protocol implementation (BMD VideoHub protocol, port 9990)
 - **HyperDeck Communication:** Custom TCP protocol implementation (BMD HyperDeck protocol, port 9993)
+- **Teranex Communication:** Custom TCP protocol implementation (BMD Teranex protocol, port 9800)
 - **State sync:** Backend holds authoritative device state; pushes combined state to frontend via WebSocket
 - **Dev access:** Vite dev server bound to `0.0.0.0` — accessible from iPhone on local network
 
 ### State Model
 ```
-ATEM Hardware     VideoHub Hardware    HyperDeck Hardware
-    ↕ (UDP)           ↕ (TCP:9990)         ↕ (TCP:9993)
-                 Node.js Backend
-                       ↕
-              Combined state store
-                       ↕ (WebSocket)
-                 React Frontend
+ATEM Hardware     VideoHub Hardware    HyperDeck Hardware    Teranex Hardware
+    ↕ (UDP)           ↕ (TCP:9990)         ↕ (TCP:9993)         ↕ (TCP:9800)
+                              Node.js Backend
+                                    ↕
+                           Combined state store
+                                    ↕ (WebSocket)
+                              React Frontend
 ```
 
 Frontend never writes to local state. It sends commands → backend → device → state update → broadcast back.
@@ -65,7 +66,22 @@ Frontend never writes to local state. It sends commands → backend → device �
 
 **Server → Client (state broadcasts):**
 ```json
-{ "type": "state", "data": { "atem": {...}, "videohub": {...}, "hyperdecks": [{...}, {...}] } }
+{
+  "type": "state",
+  "data": {
+    "atem": {...},
+    "videohub": {...},
+    "hyperdecks": [{...}],
+    "teranexes": [{...}],
+    "deviceStatus": {
+      "atem": "connected",
+      "videohub": "disconnected",
+      "hyperdecks": { "connected": 2, "total": 3 },
+      "teranexes": { "connected": 1, "total": 1 }
+    },
+    "configuredDevices": ["atem", "videohub", "hyperdeck", "teranex"]
+  }
+}
 ```
 
 **Client → Server (commands):**
@@ -96,6 +112,19 @@ All commands include `deck` parameter to target a specific HyperDeck (0-indexed)
 - `shuttle` — Variable speed playback (`{ deck: 0, speed: 200 }` = 2x)
 - `slotSelect` — Select active slot (`{ deck: 0, slot: 1 }`)
 
+**Teranex commands** (map to Teranex Ethernet Protocol):
+All commands include `unitId` parameter to target a specific Teranex unit.
+- `setVideoInput` — Select video input (`{ unitId: "teranex_1", videoSource: "HDMI" }`)
+- `setAudioInput` — Select audio input (`{ unitId: "teranex_1", audioSource: "Embedded" }`)
+- `setVideoOutput` — Set output format (`{ unitId: "teranex_1", videoMode: "1080p2398" }`)
+- `setAspectRatio` — Set aspect ratio (`{ unitId: "teranex_1", aspectRatio: "Letterbox" }`)
+- `setTestPattern` — Activate test pattern (`{ unitId: "teranex_1", output: "SMPTE Bars" }`)
+- `setTestPatternMotion` — Toggle pattern motion (`{ unitId: "teranex_1", enabled: true }`)
+- `setNoSignal` — Set no-signal pattern (`{ unitId: "teranex_1", noSignal: "Grid" }`)
+- `setOutputSource` — Set output source (`{ unitId: "teranex_1", source: "Freeze" }`)
+- `setTransitionRate` — Set transition rate (`{ unitId: "teranex_1", rate: 3 }`)
+- `renameUnit` — Rename unit (`{ unitId: "teranex_1", name: "Main Converter" }`)
+
 ### Directory Structure
 ```
 /
@@ -104,15 +133,26 @@ All commands include `deck` parameter to target a specific HyperDeck (0-indexed)
 │   ├── atem.js           # ATEM connection, command handlers, state emitter
 │   ├── videohub.js       # VideoHub TCP client (real mode)
 │   ├── videohub-mock.js  # VideoHub mock implementation
+│   ├── hyperdeck-manager.js # HyperDeck TCP client (real mode)
+│   ├── hyperdeck-mock.js    # HyperDeck mock implementation
+│   ├── teranex.js        # Teranex TCP client (real mode)
+│   ├── teranex-mock.js   # Teranex mock implementation
 │   ├── websocket.js      # WebSocket server, client management, state broadcast
 │   ├── config.js         # Device IPs, ports, environment config
+│   ├── device-config.js  # Device configuration CRUD (persistent JSON)
+│   ├── network-scanner.js # Network scanner for BMD device discovery
 │   └── test-atem.js      # ATEM testing utilities
+├── data/
+│   └── device-config.json # Persistent device configuration
 ├── client/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── AtemPage/           # ATEM switcher control page
 │   │   │   ├── VideoHubPage/       # VideoHub routing matrix page
-│   │   │   ├── TabBar/             # Bottom tab navigation
+│   │   │   ├── HyperDecksPage/     # HyperDeck recorder control page
+│   │   │   ├── TeranexPage/        # Teranex AV converter control page
+│   │   │   ├── SettingsPage/       # Device configuration & network scanner
+│   │   │   ├── NavigationDrawer/   # Hamburger menu slide-in drawer
 │   │   │   ├── CameraSourceGrid/   # 8-camera PGM/PVW grid with tap-to-cut
 │   │   │   ├── AUXPanel/           # AUX bus routing (dropup menu)
 │   │   │   ├── AutoButton/         # AUTO transition button
@@ -127,7 +167,7 @@ All commands include `deck` parameter to target a specific HyperDeck (0-indexed)
 │   │   │   └── useATEMState.js     # WebSocket state sync hook
 │   │   ├── lib/
 │   │   │   └── websocket.js        # WebSocket client, command helpers
-│   │   ├── App.jsx                 # Main app shell (tab routing)
+│   │   ├── App.jsx                 # Main app shell (drawer navigation)
 │   │   └── main.jsx                # React entry point
 │   └── vite.config.js
 ├── directives/           # Feature specs and implementation notes
@@ -173,17 +213,121 @@ HYPERDECK_2_NAME=Record B
 # HYPERDECK_3_IP=...
 # HYPERDECK_3_NAME=...
 
+# Teranex configuration (supports up to 4 units)
+# Pattern: TERANEX_N_IP and TERANEX_N_NAME where N is 1-4
+TERANEX_MOCK=true               # true = no hardware needed
+TERANEX_1_IP=192.168.1.250
+TERANEX_1_NAME=Main Converter
+TERANEX_2_IP=192.168.1.251
+TERANEX_2_NAME=Projector Feed
+# TERANEX_3_IP=...
+# TERANEX_3_NAME=...
+
 SERVER_PORT=3000
 WS_PORT=3001
 ```
 
 **Testing without hardware:**
-- Backend starts in mock mode by default (ATEM, VideoHub, HyperDecks)
+- Backend starts in mock mode by default (ATEM, VideoHub, HyperDecks, Teranex)
 - ATEM mock simulates 8 camera inputs, M/E 0, USK1, DSK1
 - VideoHub mock simulates 20×20 routing matrix
 - HyperDeck mock simulates 2 decks with transport state, clips, timecode
-- WebSocket test: `wscat -c ws://localhost:3001`
+- Teranex mock simulates 2 units with input/output format conversion
+- WebSocket test: `wscat -c ws://localhost:3000`
 - Health check: `curl http://localhost:3000/health`
+- Device API: `curl http://localhost:3000/api/devices`
+
+---
+
+## Navigation System
+
+The app uses a **hamburger drawer navigation** (replacing the previous tab bar):
+
+- **Hamburger icon** (top-left, 44×44px touch target) opens a slide-in drawer
+- **Drawer** slides in from left (280px width, 250ms ease-out) with dimmed backdrop
+- **Device pages** shown with connection status LEDs (green/amber/red)
+- **Settings** always visible at bottom of drawer
+- **Dynamic filtering**: only shows pages for configured device types
+- **First-run experience**: if no devices configured, shows Settings page automatically
+
+### Connection Status LEDs
+- **Green**: Device connected
+- **Amber**: Device connecting or partial (some of multi-device type connected)
+- **Red**: Device disconnected
+
+---
+
+## Device Configuration REST API
+
+Device configuration is stored in `data/device-config.json` and managed via REST API.
+
+### Endpoints
+
+**GET /api/devices** — List all configured devices with live status
+```json
+[
+  { "id": "atem_1", "type": "atem", "name": "Main Switcher", "ip": "192.168.1.240", "port": 9910, "status": "connected" },
+  { "id": "hyperdeck_1", "type": "hyperdeck", "name": "CAM 1 ISO", "ip": "192.168.1.50", "port": 9993, "status": "connected" }
+]
+```
+
+**POST /api/devices** — Add a new device
+```json
+// Request
+{ "type": "hyperdeck", "name": "CAM 2 ISO", "ip": "192.168.1.51" }
+// Response
+{ "id": "hyperdeck_2", "type": "hyperdeck", "name": "CAM 2 ISO", "ip": "192.168.1.51", "port": 9993, "status": "disconnected" }
+```
+
+**PUT /api/devices/:id** — Update device name or IP
+```json
+// Request
+{ "name": "New Name", "ip": "192.168.1.52" }
+// Response
+{ "id": "hyperdeck_2", "type": "hyperdeck", "name": "New Name", "ip": "192.168.1.52", "port": 9993, "status": "connected" }
+```
+
+**DELETE /api/devices/:id** — Remove a device
+```json
+// Response
+{ "success": true }
+```
+
+**POST /api/scan** — Scan network for BMD devices
+```json
+// Request (optional subnet)
+{ "subnet": "192.168.1.0/24" }
+// Response
+{
+  "status": "complete",
+  "found": [
+    { "ip": "192.168.1.50", "port": 9993, "type": "hyperdeck", "name": "HyperDeck", "alreadyConfigured": false },
+    { "ip": "192.168.1.60", "port": 9990, "type": "videohub", "name": "VideoHub", "alreadyConfigured": false }
+  ]
+}
+```
+
+### Device Config Schema (`data/device-config.json`)
+```json
+{
+  "version": 1,
+  "devices": [
+    { "id": "atem_1", "type": "atem", "name": "Main Switcher", "ip": "192.168.1.240", "port": 9910 },
+    { "id": "hyperdeck_1", "type": "hyperdeck", "name": "CAM 1 ISO", "ip": "192.168.1.50", "port": 9993 }
+  ]
+}
+```
+
+### .env vs device-config.json Priority
+1. If `data/device-config.json` exists, devices are loaded from there
+2. If config is empty/missing, devices are migrated from `.env` (ATEM_IP, VIDEOHUB_IP, HYPERDECK_N_IP, TERANEX_N_IP)
+3. Once migrated, all changes go to `device-config.json`
+4. `.env` still controls mock mode (ATEM_MOCK, VIDEOHUB_MOCK, etc.)
+
+### Network Scanner Limitations
+- ATEM switchers use UDP protocol; TCP port scan may not detect them reliably. Add manually if not discovered.
+- Full /24 subnet scan takes 15-30 seconds with parallel probing.
+- In mock mode, scanner returns simulated discovered devices.
 
 ---
 
@@ -193,7 +337,7 @@ WS_PORT=3001
 
 **Mobile preview:** Vite dev server binds to `0.0.0.0:5173` — access from iPhone via `http://<machine-LAN-IP>:5173`.
 
-**Mock mode:** Backend simulates ATEM, VideoHub, and HyperDeck (multiple decks) state and command responses. Frontend code is identical for mock vs. real — no conditional logic needed.
+**Mock mode:** Backend simulates ATEM, VideoHub, HyperDeck (multiple decks), and Teranex (multiple units) state and command responses. Frontend code is identical for mock vs. real — no conditional logic needed.
 
 ---
 
@@ -220,20 +364,57 @@ WS_PORT=3001
 | VideoHub lock awareness | ✓ |
 | Mock mode support (ATEM + VideoHub) | ✓ |
 
-### Phase 2 — HyperDeck Master Control (Current)
+### Phase 2 — HyperDeck Master Control
 
 Full deck control for HyperDeck recorders:
 
 | Feature | Status |
 |---------|--------|
-| Transport controls (Play, Stop, Record) | |
-| Jog/Shuttle control | |
-| Clip list display | |
-| Timecode display | |
-| Slot selection (SD card slots) | |
-| Recording format display | |
-| Connection status indicator | |
-| Mock mode support | |
+| Transport controls (Play, Stop, Record) | ✓ |
+| Jog/Shuttle control | ✓ |
+| Clip list display | ✓ |
+| Timecode display | ✓ |
+| Slot selection (SD card slots) | ✓ |
+| Recording format display | ✓ |
+| Connection status indicator | ✓ |
+| Mock mode support | ✓ |
+
+### Phase 3 — Teranex AV Control ✓ (Complete)
+
+Full control for Teranex AV standards converters:
+
+| Feature | Status |
+|---------|--------|
+| Multi-unit support (up to 4 units) | ✓ |
+| Video input selection (SDI, HDMI, Optical) | ✓ |
+| Audio input selection (Embedded, AES, Analog) | ✓ |
+| Output format conversion | ✓ |
+| Aspect ratio control | ✓ |
+| Test pattern generation with motion | ✓ |
+| Output source switching (Input, Black, Still, Freeze) | ✓ |
+| Transition rate control | ✓ |
+| No-signal pattern selection | ✓ |
+| Signal status indicators | ✓ |
+| Unit rename with persistence | ✓ |
+| Connection status indicator | ✓ |
+| Mock mode support | ✓ |
+
+### Phase 4 — Navigation & Settings ✓ (Complete)
+
+Dynamic navigation and device configuration system:
+
+| Feature | Status |
+|---------|--------|
+| Hamburger menu navigation (replaces tab bar) | ✓ |
+| Slide-in drawer with device pages | ✓ |
+| Connection status LEDs in drawer | ✓ |
+| Settings page for device configuration | ✓ |
+| Network scanner for BMD device discovery | ✓ |
+| Device add/edit/delete via REST API | ✓ |
+| Persistent device config (JSON file) | ✓ |
+| .env migration for backward compatibility | ✓ |
+| Dynamic navigation (only show configured devices) | ✓ |
+| First-run experience (auto-show Settings) | ✓ |
 
 ### Future (not scoped yet)
 - Multiple M/Es
@@ -259,4 +440,5 @@ Full deck control for HyperDeck recorders:
 ## Project Organization
 
 - `directives/` — Feature specs and implementation notes (living documents, update as features are built)
+- `data/` — Persistent data files (device configuration, created automatically)
 - `.env` — Environment variables (gitignored, see template above)

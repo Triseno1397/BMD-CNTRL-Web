@@ -5,7 +5,7 @@ import config from './config.js';
  * WebSocket Manager
  * Handles client connections and message routing for multiple devices (ATEM, VideoHub)
  *
- * State message format: { type: 'state', data: { atem: {...}, videohub: {...} } }
+ * State message format: { type: 'state', data: { atem: {...}, videohub: {...}, deviceStatus: {...}, configuredDevices: [...] } }
  * Command message format: { type: 'command', device: 'atem'|'videohub', command: '...', params: {...} }
  */
 class WebSocketManager {
@@ -14,6 +14,24 @@ class WebSocketManager {
     this.clients = new Set();
     this.stateProviders = {};   // { atem: fn, videohub: fn }
     this.commandHandlers = {};  // { atem: fn, videohub: fn }
+    this.deviceStatusProvider = null;  // Function to get device status
+    this.configuredDevicesProvider = null;  // Function to get configured device types
+  }
+
+  /**
+   * Set provider for device connection status
+   * @param {Function} fn - Function that returns { atem: 'connected'|'disconnected', videohub: ..., hyperdecks: {connected: n, total: n}, teranexes: ... }
+   */
+  setDeviceStatusProvider(fn) {
+    this.deviceStatusProvider = fn;
+  }
+
+  /**
+   * Set provider for configured device types
+   * @param {Function} fn - Function that returns array of configured device types ['atem', 'videohub', ...]
+   */
+  setConfiguredDevicesProvider(fn) {
+    this.configuredDevicesProvider = fn;
   }
 
   /**
@@ -42,6 +60,17 @@ class WebSocketManager {
     for (const [device, provider] of Object.entries(this.stateProviders)) {
       state[device] = provider();
     }
+
+    // Add device status for navigation drawer LEDs
+    if (this.deviceStatusProvider) {
+      state.deviceStatus = this.deviceStatusProvider();
+    }
+
+    // Add configured device types for dynamic navigation
+    if (this.configuredDevicesProvider) {
+      state.configuredDevices = this.configuredDevicesProvider();
+    }
+
     return state;
   }
 
