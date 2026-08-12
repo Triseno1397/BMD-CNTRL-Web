@@ -25,6 +25,10 @@ class VideoHubManager extends EventEmitter {
     this.reconnectTimer = null;
     this.reconnectDelay = 1000;
     this.maxReconnectDelay = 30000;
+    // FIX: Add pending command tracking for ACK/NAK validation
+    this.pendingCommand = null;
+    // Store device config for reconnection
+    this.deviceConfig = null;
     this.state = {
       connected: false,
       device: null,
@@ -35,13 +39,22 @@ class VideoHubManager extends EventEmitter {
 
   /**
    * Connect to VideoHub
+   * @param {Object} deviceConfig - Optional device config from device-config.json
    */
-  async connect() {
+  async connect(deviceConfig = null) {
+    // Store device config for reconnection (only update if provided)
+    if (deviceConfig) {
+      this.deviceConfig = deviceConfig;
+    }
+    // Use stored device config if available, otherwise fall back to env vars
+    const ip = this.deviceConfig?.ip || config.videohubIp;
+    const port = this.deviceConfig?.port || config.videohubPort;
+
     return new Promise((resolve, reject) => {
       this.socket = new Socket();
 
       this.socket.on('connect', () => {
-        console.log(`✓ VideoHub connected to ${config.videohubIp}:${config.videohubPort}`);
+        console.log(`✓ VideoHub connected to ${ip}:${port}`);
         this.state.connected = true;
         this.reconnectDelay = 1000; // Reset reconnect delay on successful connection
         resolve();
@@ -66,8 +79,8 @@ class VideoHubManager extends EventEmitter {
         }
       });
 
-      console.log(`Connecting to VideoHub at ${config.videohubIp}:${config.videohubPort}...`);
-      this.socket.connect(config.videohubPort, config.videohubIp);
+      console.log(`Connecting to VideoHub at ${ip}:${port}...`);
+      this.socket.connect(port, ip);
     });
   }
 
@@ -122,10 +135,19 @@ class VideoHubManager extends EventEmitter {
         this.parseLocks(dataLines);
         break;
       case 'ACK':
-        // Command acknowledged, no action needed
+        // FIX: Resolve pending command on ACK
+        if (this.pendingCommand) {
+          this.pendingCommand.resolve();
+          this.pendingCommand = null;
+        }
         break;
       case 'NAK':
         console.error('VideoHub: Command rejected (NAK)');
+        // FIX: Reject pending command on NAK
+        if (this.pendingCommand) {
+          this.pendingCommand.reject(new Error('Command rejected by VideoHub'));
+          this.pendingCommand = null;
+        }
         break;
       default:
         // Unknown block type, ignore
@@ -315,6 +337,7 @@ class VideoHubManager extends EventEmitter {
   /**
    * Send routing command
    * Format: "VIDEO OUTPUT ROUTING:\n<output> <input>\n\n"
+   * FIX: Wait for ACK/NAK response with timeout to prevent silent failures
    */
   async sendRoute(output, input) {
     const outputState = this.state.outputs[output];
@@ -327,10 +350,44 @@ class VideoHubManager extends EventEmitter {
       throw new Error(`Output ${output} is locked`);
     }
 
-    const command = `VIDEO OUTPUT ROUTING:\n${output} ${input}\n\n`;
-    this.socket.write(command);
+    // FIX: Wait for ACK/NAK with timeout to ensure command success/failure is reported
+    return new Promise((resolve, reject) => {
+      const COMMAND_TIMEOUT_MS = 5000;
 
-    console.log(`VideoHub: Sending route command - output ${output} -> input ${input}`);
+      const timeout = setTimeout(() => {
+        if (this.pendingCommand) {
+          this.pendingCommand = null;
+          reject(new Error('VideoHub command timed out'));
+        }
+      }, COMMAND_TIMEOUT_MS);
+
+      this.pendingCommand = {
+        resolve: () => {
+          clearTimeout(timeout);
+          resolve();
+        },
+        reject: (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      };
+
+      const command = `VIDEO OUTPUT ROUTING:\n${output} ${input}\n\n`;
+
+      try {
+        if (!this.socket || !this.socket.writable) {
+          clearTimeout(timeout);
+          this.pendingCommand = null;
+          throw new Error('VideoHub socket not writable');
+        }
+        this.socket.write(command);
+        console.log(`VideoHub: Sending route command - output ${output} -> input ${input}`);
+      } catch (err) {
+        clearTimeout(timeout);
+        this.pendingCommand = null;
+        reject(err);
+      }
+    });
   }
 
   /**

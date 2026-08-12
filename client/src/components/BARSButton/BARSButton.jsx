@@ -1,19 +1,23 @@
-import { sendCommand } from '../../lib/websocket';
 import './BARSButton.css';
 
 /**
  * BARS (Color Bars) button - tap to preview, tap again to cut to program
+ *
+ * @param {Function} sendCommand - Function to send commands to ATEM
+ * @param {boolean} connected - Whether WebSocket is connected
+ * @param {boolean} isProgrammed - True if BARS is currently on program
+ * @param {boolean} isPreviewed - True if BARS is currently on preview
  */
-export function BARSButton({ ws, connected, isProgrammed, isPreviewed }) {
+export function BARSButton({ sendCommand, connected, isProgrammed, isPreviewed }) {
   const handleClick = () => {
-    if (!connected || !ws) return;
+    if (!connected) return;
 
     if (isPreviewed) {
       // Already in preview - execute cut to send to program
-      sendCommand(ws, 'cut', { me: 0 });
+      sendCommand('cut', { me: 0 });
     } else {
       // Select for preview
-      sendCommand(ws, 'changePreviewInput', { input: 1000, me: 0 });
+      sendCommand('changePreviewInput', { input: 1000, me: 0 });
     }
   };
 

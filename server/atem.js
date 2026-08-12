@@ -2,6 +2,207 @@ import { EventEmitter } from 'events';
 import { Atem } from 'atem-connection';
 import config from './config.js';
 
+/**
+ * Create a default Mix Effect structure
+ * @param {number} index - M/E index
+ * @returns {Object} Default M/E state
+ */
+function createDefaultMixEffect(index) {
+  return {
+    index,
+    programInput: 0,
+    previewInput: 0,
+    transitionSettings: {
+      mix: { rate: 30 }
+    },
+    transitionPosition: {
+      inTransition: false,
+      remainingFrames: 0,
+      handlePosition: 0
+    },
+    upstreamKeyers: [{ index: 0, onAir: false, fillSource: 0, cutSource: 0 }],
+    fadeToBlack: {
+      isFullyBlack: false,
+      inTransition: false,
+      remainingFrames: 0,
+      rate: 30
+    }
+  };
+}
+
+/**
+ * Create empty ATEM state with minimum required structure
+ * @returns {Object} Empty state
+ */
+function createEmptyState() {
+  return {
+    video: {
+      mixEffects: [createDefaultMixEffect(0)],
+      downstreamKeyers: [{ index: 0, onAir: false, tie: false, rate: 30 }],
+      auxilliaries: [0, 0, 0, 0, 0, 0]
+    },
+    inputs: {
+      0: { name: 'Black', longName: 'Black', internalPortType: 1 }
+    },
+    info: {}
+  };
+}
+
+/**
+ * Normalize upstream keyers to consistent format
+ * @param {Array|Object} keyers - Keyers from ATEM state
+ * @returns {Array} Normalized keyers array
+ */
+function normalizeKeyers(keyers) {
+  if (!keyers) return [{ index: 0, onAir: false, fillSource: 0, cutSource: 0 }];
+
+  const keyerArray = Array.isArray(keyers) ? keyers : Object.values(keyers);
+  return keyerArray.map((keyer, index) => ({
+    index: keyer?.index ?? index,
+    onAir: keyer?.onAir ?? false,
+    fillSource: keyer?.fillSource ?? 0,
+    cutSource: keyer?.cutSource ?? 0
+  }));
+}
+
+/**
+ * Normalize ATEM state to ensure consistent structure across all ATEM models
+ * Handles differences between ATEM Mini, Television Studio, Constellation, etc.
+ * @param {Object} rawState - Raw state from atem-connection
+ * @returns {Object} Normalized state with guaranteed structure
+ */
+function normalizeAtemState(rawState) {
+  if (!rawState) {
+    console.log('[ATEM Normalize] No raw state, returning empty state');
+    return createEmptyState();
+  }
+
+  const normalized = {
+    video: {
+      mixEffects: [],
+      downstreamKeyers: [],
+      auxilliaries: []
+    },
+    inputs: {},
+    info: rawState.info || {}
+  };
+
+  // Normalize Mix Effects - handle both array and Map/object formats
+  if (rawState.video?.mixEffects) {
+    let meSource;
+    if (Array.isArray(rawState.video.mixEffects)) {
+      meSource = rawState.video.mixEffects;
+    } else if (rawState.video.mixEffects instanceof Map) {
+      meSource = Array.from(rawState.video.mixEffects.values());
+    } else if (typeof rawState.video.mixEffects === 'object') {
+      meSource = Object.values(rawState.video.mixEffects);
+    } else {
+      meSource = [];
+    }
+
+    normalized.video.mixEffects = meSource
+      .filter(me => me !== null && me !== undefined)
+      .map((me, index) => ({
+        index: me?.index ?? index,
+        programInput: me?.programInput ?? 0,
+        previewInput: me?.previewInput ?? 0,
+        transitionSettings: {
+          mix: {
+            rate: me?.transitionSettings?.mix?.rate ?? 30
+          }
+        },
+        transitionPosition: {
+          inTransition: me?.transitionPosition?.inTransition ?? false,
+          remainingFrames: me?.transitionPosition?.remainingFrames ?? 0,
+          handlePosition: me?.transitionPosition?.handlePosition ?? 0
+        },
+        upstreamKeyers: normalizeKeyers(me?.upstreamKeyers),
+        fadeToBlack: {
+          isFullyBlack: me?.fadeToBlack?.isFullyBlack ?? false,
+          inTransition: me?.fadeToBlack?.inTransition ?? false,
+          remainingFrames: me?.fadeToBlack?.remainingFrames ?? 0,
+          rate: me?.fadeToBlack?.rate ?? 30
+        }
+      }));
+  }
+
+  // Ensure at least one M/E exists
+  if (normalized.video.mixEffects.length === 0) {
+    console.log('[ATEM Normalize] No M/Es found, creating default');
+    normalized.video.mixEffects.push(createDefaultMixEffect(0));
+  }
+
+  // Normalize Downstream Keyers
+  if (rawState.video?.downstreamKeyers) {
+    let dskSource;
+    if (Array.isArray(rawState.video.downstreamKeyers)) {
+      dskSource = rawState.video.downstreamKeyers;
+    } else if (rawState.video.downstreamKeyers instanceof Map) {
+      dskSource = Array.from(rawState.video.downstreamKeyers.values());
+    } else if (typeof rawState.video.downstreamKeyers === 'object') {
+      dskSource = Object.values(rawState.video.downstreamKeyers);
+    } else {
+      dskSource = [];
+    }
+
+    normalized.video.downstreamKeyers = dskSource
+      .filter(dsk => dsk !== null && dsk !== undefined)
+      .map((dsk, index) => ({
+        index: dsk?.index ?? index,
+        onAir: dsk?.onAir ?? false,
+        tie: dsk?.tie ?? false,
+        rate: dsk?.rate ?? 30,
+        // FIX: Preserve sources structure for consistency with mock state
+        sources: {
+          fillSource: dsk?.sources?.fillSource ?? dsk?.fillSource ?? 0,
+          cutSource: dsk?.sources?.cutSource ?? dsk?.cutSource ?? 0
+        }
+      }));
+  }
+
+  // Ensure at least one DSK exists
+  if (normalized.video.downstreamKeyers.length === 0) {
+    normalized.video.downstreamKeyers.push({ index: 0, onAir: false, tie: false, rate: 30 });
+  }
+
+  // Normalize AUX buses
+  if (rawState.video?.auxilliaries) {
+    if (Array.isArray(rawState.video.auxilliaries)) {
+      normalized.video.auxilliaries = [...rawState.video.auxilliaries];
+    } else if (rawState.video.auxilliaries instanceof Map) {
+      normalized.video.auxilliaries = Array.from(rawState.video.auxilliaries.values());
+    } else if (typeof rawState.video.auxilliaries === 'object') {
+      normalized.video.auxilliaries = Object.values(rawState.video.auxilliaries);
+    }
+  }
+
+  // Normalize Inputs - handle both Map and object formats
+  if (rawState.inputs) {
+    let inputEntries;
+    if (rawState.inputs instanceof Map) {
+      inputEntries = Array.from(rawState.inputs.entries());
+    } else if (typeof rawState.inputs === 'object') {
+      inputEntries = Object.entries(rawState.inputs);
+    } else {
+      inputEntries = [];
+    }
+
+    for (const [id, input] of inputEntries) {
+      if (input === null || input === undefined) continue;
+      normalized.inputs[id] = {
+        name: input?.shortName || input?.name || `Input ${id}`,
+        longName: input?.longName || input?.name || `Input ${id}`,
+        internalPortType: input?.internalPortType ?? 0
+      };
+    }
+  }
+
+  // Log normalization results
+  console.log(`[ATEM Normalize] M/Es: ${normalized.video.mixEffects.length}, Inputs: ${Object.keys(normalized.inputs).length}, AUX: ${normalized.video.auxilliaries.length}, DSKs: ${normalized.video.downstreamKeyers.length}`);
+
+  return normalized;
+}
+
 class ATEMManager extends EventEmitter {
   constructor() {
     super();
@@ -121,7 +322,7 @@ class ATEMManager extends EventEmitter {
 
     // Listen for state changes from ATEM
     this.connection.on('stateChanged', (state, pathToChange) => {
-      this.state = state;
+      this.state = normalizeAtemState(state);
 
       // DEBUG: Log ALL state updates
       const path = pathToChange.join('.');
@@ -145,8 +346,8 @@ class ATEMManager extends EventEmitter {
     // Connect to ATEM
     try {
       await this.connection.connect(config.atemIp);
-      this.state = this.connection.state;
-      console.log('✓ Initial ATEM state received');
+      this.state = normalizeAtemState(this.connection.state);
+      console.log('✓ Initial ATEM state received and normalized');
       console.log('  MixEffects:', this.state.video?.mixEffects?.length || 0);
       console.log('  Inputs:', Object.keys(this.state.inputs || {}).length);
       console.log('  Note: State may be incomplete, waiting for stateChanged events...');
@@ -156,14 +357,7 @@ class ATEMManager extends EventEmitter {
       console.error('  The atem-connection library will attempt to reconnect automatically.');
 
       // Initialize empty state so server can continue
-      this.state = {
-        video: {
-          mixEffects: [],
-          downstreamKeyers: [],
-          auxilliaries: []
-        },
-        inputs: {}
-      };
+      this.state = createEmptyState();
 
       // Emit connection error event for UI to display
       this.emit('connectionError', error.message);
@@ -276,6 +470,17 @@ class ATEMManager extends EventEmitter {
         }
         mixEffect.previewInput = input;
         console.log(`Mock: Preview input changed to ${input}`);
+        break;
+      }
+
+      // FIX: Add missing changeProgramInput handler
+      case 'changeProgramInput': {
+        const { input } = args;
+        if (this.state.inputs[input] === undefined) {
+          throw new Error(`Invalid input: ${input}`);
+        }
+        mixEffect.programInput = input;
+        console.log(`Mock: Program input changed to ${input}`);
         break;
       }
 

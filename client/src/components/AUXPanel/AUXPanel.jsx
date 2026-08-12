@@ -6,12 +6,12 @@ import './AUXPanel.css';
 /**
  * AUX Panel - Fixed bottom-right control for AUX bus routing
  *
- * @param {WebSocket} ws - WebSocket connection
+ * @param {Function} sendCommand - Function to send commands to ATEM
  * @param {boolean} connected - Whether WebSocket is connected
  * @param {number[]} auxilliaries - Array of input IDs for each AUX bus (index = bus number)
  * @param {Object} inputs - Map of input ID to input info { name, longName, internalPortType }
  */
-export function AUXPanel({ ws, connected, auxilliaries, inputs }) {
+export function AUXPanel({ sendCommand, connected, auxilliaries, inputs }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAuxBus, setSelectedAuxBus] = useState(null);
   const panelRef = useRef(null);
@@ -86,7 +86,7 @@ export function AUXPanel({ ws, connected, auxilliaries, inputs }) {
               </button>
             </div>
             <AUXSourcePicker
-              ws={ws}
+              sendCommand={sendCommand}
               connected={connected}
               auxBus={selectedAuxBus}
               inputs={inputs}

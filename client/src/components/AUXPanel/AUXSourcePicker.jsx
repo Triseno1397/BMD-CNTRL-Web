@@ -1,4 +1,3 @@
-import { sendCommand } from '../../lib/websocket';
 import './AUXSourcePicker.css';
 
 // AUX-routeable source IDs in display order
@@ -14,39 +13,47 @@ const ROUTEABLE_SOURCE_IDS = [
 /**
  * AUX Source Picker - Grid of source buttons for routing
  *
- * @param {WebSocket} ws - WebSocket connection
+ * @param {Function} sendCommand - Function to send commands to ATEM
  * @param {boolean} connected - Whether WebSocket is connected
  * @param {number} auxBus - Which AUX bus is being configured (0-indexed)
  * @param {Object} inputs - Map of input ID to input info
  * @param {number} currentInput - Currently routed input ID
  * @param {Function} onSourceSelected - Callback when source is selected
  */
-export function AUXSourcePicker({ ws, connected, auxBus, inputs, currentInput, onSourceSelected }) {
+export function AUXSourcePicker({ sendCommand, connected, auxBus, inputs, currentInput, onSourceSelected }) {
+  // Safe inputs with fallback
+  const safeInputs = inputs || {};
+
   // Filter to only sources that exist in ATEM state
-  const availableSources = ROUTEABLE_SOURCE_IDS.filter(id => inputs[id] !== undefined);
+  const availableSources = ROUTEABLE_SOURCE_IDS.filter(id => safeInputs[id] !== undefined);
+
+  // If no sources available, show message
+  if (availableSources.length === 0) {
+    return (
+      <div className="aux-source-picker aux-source-picker--empty">
+        No sources available
+      </div>
+    );
+  }
 
   const handleSelectSource = (inputId) => {
-    if (!connected || !ws) {
+    if (!connected) {
       console.warn('Cannot route AUX: not connected');
       return;
     }
 
-    try {
-      sendCommand(ws, 'setAuxSource', {
-        auxBus: auxBus,
-        input: inputId
-      });
-      onSourceSelected();
-    } catch (error) {
-      console.error('Failed to route AUX:', error);
-    }
+    sendCommand('setAuxSource', {
+      auxBus: auxBus,
+      input: inputId
+    });
+    onSourceSelected();
   };
 
   /**
    * Get display name for a source
    */
   const getSourceName = (inputId) => {
-    const input = inputs[inputId];
+    const input = safeInputs[inputId];
     return input?.name ?? `Input ${inputId}`;
   };
 

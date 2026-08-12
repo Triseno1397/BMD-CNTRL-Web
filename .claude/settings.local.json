@@ -10,7 +10,25 @@
       "Bash(findstr:*)",
       "Bash(npm run lint:*)",
       "Bash(npm run build:*)",
-      "Bash(timeout 10 npm start:*)"
+      "Bash(timeout 10 npm start:*)",
+      "Bash(tasklist:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(cd:*)",
+      "Bash(curl:*)",
+      "Bash(git -C \"c:\\\\Users\\\\trist\\\\BMD CNTRL v2\" show 19abfc0:package.json)",
+      "Bash(git -C \"c:\\\\Users\\\\trist\\\\BMD CNTRL v2\" ls-tree -r 19abfc0)",
+      "Bash(git -C \"c:\\\\Users\\\\trist\\\\BMD CNTRL v2\" show 19abfc0 --name-only)",
+      "Bash(arp:*)",
+      "Bash(ipconfig:*)",
+      "Bash(netsh interface ipv4 show addresses:*)",
+      "Bash(node:*)",
+      "Bash(ping:*)",
+      "Bash(if exist bmd-*.js del bmd-*.js)",
+      "Bash(if exist teranex-identify.js del teranex-identify.js)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)"
     ]
   }
 }

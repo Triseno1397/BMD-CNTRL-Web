@@ -23,8 +23,7 @@ function App() {
     connectionStatus,
     error,
     commandError,
-    sendCommand,
-    ws
+    sendCommand
   } = useATEMState();
 
   const connected = connectionStatus === 'connected';
@@ -107,7 +106,7 @@ function App() {
         {activePage === 'atem' && (
           <AtemPage
             atemState={atemState}
-            ws={ws}
+            sendCommand={sendCommand}
             connected={connected}
             error={error}
             commandError={commandError}

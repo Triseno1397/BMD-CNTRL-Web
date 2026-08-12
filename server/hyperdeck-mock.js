@@ -36,12 +36,16 @@ class HyperDeckMock extends EventEmitter {
 
   /**
    * Initialize mock HyperDeck decks
-   * Reads configuration from config.hyperdecks if available,
-   * otherwise creates 2 default mock decks
+   * @param {Array} deviceConfigs - Optional array of device configs from device-config.json
    */
-  async connect() {
-    // Read from config if any decks are configured
-    if (config.hyperdecks && config.hyperdecks.length > 0) {
+  async connect(deviceConfigs = null) {
+    // Use device configs if provided, otherwise fall back to env vars or defaults
+    if (deviceConfigs && deviceConfigs.length > 0) {
+      this.decks = deviceConfigs.map((deckConfig) => {
+        const index = deckConfig.index ?? parseInt(deckConfig.id.split('_')[1], 10) - 1;
+        return this.createMockDeck(index, deckConfig.name, deckConfig.ip);
+      });
+    } else if (config.hyperdecks && config.hyperdecks.length > 0) {
       this.decks = config.hyperdecks.map((deckConfig) =>
         this.createMockDeck(deckConfig.index, deckConfig.name, deckConfig.ip)
       );

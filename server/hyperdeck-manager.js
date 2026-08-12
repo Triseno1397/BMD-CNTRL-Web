@@ -44,9 +44,11 @@ class HyperDeckManager extends EventEmitter {
 
   /**
    * Initialize all configured HyperDeck connections
+   * @param {Array} deviceConfigs - Optional array of device configs from device-config.json
    */
-  async connect() {
-    const deckConfigs = config.hyperdecks;
+  async connect(deviceConfigs = null) {
+    // Use passed device configs (from device-config.json) or fall back to env vars
+    const deckConfigs = deviceConfigs || config.hyperdecks;
 
     if (deckConfigs.length === 0) {
       console.log('No HyperDecks configured');
@@ -56,8 +58,15 @@ class HyperDeckManager extends EventEmitter {
     console.log(`Initializing ${deckConfigs.length} HyperDeck connection(s)...`);
 
     for (const deckConfig of deckConfigs) {
-      this.initializeDeck(deckConfig);
-      this.connectDeck(deckConfig.id);
+      // Normalize config format (device-config.json uses slightly different shape)
+      const normalizedConfig = {
+        id: deckConfig.id,
+        index: deckConfig.index ?? parseInt(deckConfig.id.split('_')[1], 10) - 1,
+        name: deckConfig.name,
+        ip: deckConfig.ip
+      };
+      this.initializeDeck(normalizedConfig);
+      this.connectDeck(normalizedConfig.id);
     }
   }
 
@@ -142,6 +151,8 @@ class HyperDeckManager extends EventEmitter {
       console.error(`HyperDeck ${deck.name} connection error:`, error.message);
       deck.connected = false;
       deck.connecting = false;
+      // FIX: Emit state change so UI reflects disconnected state
+      this.emit('stateChange', this.getAllState());
     });
 
     console.log(`Connecting to HyperDeck ${deck.name} at ${deck.ip}:${config.hyperdeckPort}...`);

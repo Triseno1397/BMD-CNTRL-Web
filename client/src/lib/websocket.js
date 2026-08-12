@@ -22,7 +22,12 @@ export function sendCommand(ws, command, params = {}, device = 'atem') {
     params
   });
 
-  ws.send(message);
+  // FIX: Wrap send in try-catch to handle race condition where socket closes between check and send
+  try {
+    ws.send(message);
+  } catch (err) {
+    throw new Error(`Failed to send command: ${err.message}`);
+  }
   console.log(`Sent command to ${device}: ${command}`, params);
 }
 

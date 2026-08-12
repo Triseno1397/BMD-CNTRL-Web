@@ -11,12 +11,12 @@ import './AtemPage.css';
  * ATEM control page - contains all M/E controls
  * @param {Object} props
  * @param {Object} props.atemState - Current ATEM state from WebSocket
- * @param {WebSocket} props.ws - WebSocket connection for sending commands
+ * @param {Function} props.sendCommand - Function to send commands to ATEM
  * @param {boolean} props.connected - Whether WebSocket is connected
  * @param {Object} props.error - WebSocket error if any
  * @param {Object} props.commandError - Command error if any
  */
-export function AtemPage({ atemState, ws, connected, error, commandError }) {
+export function AtemPage({ atemState, sendCommand, connected, error, commandError }) {
   // Extract transition state
   const mixEffect = atemState?.video?.mixEffects?.[0];
   const transitionRate = mixEffect?.transitionSettings?.mix?.rate ?? 30;
@@ -59,10 +59,10 @@ export function AtemPage({ atemState, ws, connected, error, commandError }) {
         </div>
       )}
 
-      <CameraSourceGrid atemState={atemState} ws={ws} connected={connected} />
+      <CameraSourceGrid atemState={atemState} sendCommand={sendCommand} connected={connected} />
 
       <AutoButton
-        ws={ws}
+        sendCommand={sendCommand}
         connected={connected}
         transitionRate={transitionRate}
         inTransition={inTransition}
@@ -71,14 +71,14 @@ export function AtemPage({ atemState, ws, connected, error, commandError }) {
       <div className="atem-page__bottom-row">
         <div className="atem-page__keyer-column">
           <KeyerButton
-            ws={ws}
+            sendCommand={sendCommand}
             connected={connected}
             keyerIndex={0}
             onAir={usk1OnAir}
             label="USK1"
           />
           <DSKButton
-            ws={ws}
+            sendCommand={sendCommand}
             connected={connected}
             keyerIndex={0}
             onAir={dsk1OnAir}
@@ -87,13 +87,13 @@ export function AtemPage({ atemState, ws, connected, error, commandError }) {
         </div>
         <div className="atem-page__special-sources">
           <BARSButton
-            ws={ws}
+            sendCommand={sendCommand}
             connected={connected}
             isProgrammed={barsIsProgrammed}
             isPreviewed={barsIsPreviewed}
           />
           <FTBButton
-            ws={ws}
+            sendCommand={sendCommand}
             connected={connected}
             isFullyBlack={ftbIsFullyBlack}
             inTransition={ftbInTransition}
@@ -103,7 +103,7 @@ export function AtemPage({ atemState, ws, connected, error, commandError }) {
       </div>
 
       <AUXPanel
-        ws={ws}
+        sendCommand={sendCommand}
         connected={connected}
         auxilliaries={auxilliaries}
         inputs={inputs}

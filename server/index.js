@@ -140,18 +140,53 @@ app.delete('/api/devices/:id', async (req, res) => {
 // POST /api/scan - Network scan for BMD devices
 app.post('/api/scan', async (req, res) => {
   try {
-    const { subnet } = req.body;
+    const { subnet, useMock } = req.body;
 
-    // Use mock scanner in mock mode
-    const scanner = config.mockMode ? networkScanner.scanNetworkMock : networkScanner.scanNetwork;
+    // Use mock scanner only if ALL devices are in mock mode, or if explicitly requested
+    const allMocked = config.mockMode && config.videohubMockMode &&
+                      config.hyperdeckMockMode && config.teranexMockMode;
+    const shouldUseMock = useMock || allMocked;
 
-    const results = await scanner({ subnet });
+    console.log(`\n=== Network Scan Request ===`);
+    console.log(`Mock mode: ${shouldUseMock}`);
+    console.log(`Subnet requested: ${subnet || 'auto-detect'}`);
+
+    // Get subnet info for debugging
+    const subnets = networkScanner.getLocalSubnets();
+    console.log(`Detected subnets:`, subnets.map(s => `${s.cidr} (${s.interface})`).join(', '));
+
+    const scanner = shouldUseMock ? networkScanner.scanNetworkMock : networkScanner.scanNetwork;
+
+    const results = await scanner({
+      subnet,
+      onProgress: (current, total) => {
+        // Log progress every 25%
+        if (current % Math.floor(total / 4) === 0) {
+          console.log(`Scan progress: ${current}/${total} (${Math.round(current/total*100)}%)`);
+        }
+      }
+    });
+
+    console.log(`Scan complete. Found ${results.length} devices.`);
+    console.log(`=== End Network Scan ===\n`);
+
     res.json({
       status: 'complete',
-      found: results
+      found: results,
+      debug: {
+        usedMock: shouldUseMock,
+        scannedSubnet: subnet || (subnets[0]?.cidr || 'unknown'),
+        detectedSubnets: subnets.map(s => ({ cidr: s.cidr, interface: s.interface }))
+      }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Network scan error:', error);
+    res.status(500).json({
+      error: error.message,
+      debug: {
+        detectedSubnets: networkScanner.getLocalSubnets().map(s => ({ cidr: s.cidr, interface: s.interface }))
+      }
+    });
   }
 });
 
@@ -212,17 +247,40 @@ async function start() {
     await deviceConfig.loadConfig();
     console.log('✓ Device configuration loaded');
 
-    // 1. Initialize ATEM connection
-    await atemManager.connect();
+    // 1. Initialize ATEM connection (non-blocking - server starts even if ATEM unreachable)
+    try {
+      await atemManager.connect();
+    } catch (error) {
+      console.log(`⚠ ATEM connection failed: ${error.message} (will retry in background)`);
+    }
 
-    // 2. Initialize VideoHub connection
-    await videohubManager.connect();
+    // 2. Initialize VideoHub connection (non-blocking)
+    // Pass device config from device-config.json (single source of truth)
+    try {
+      const videohubDevices = deviceConfig.getByType('videohub');
+      const videohubConfig = videohubDevices.length > 0 ? videohubDevices[0] : null;
+      await videohubManager.connect(videohubConfig);
+    } catch (error) {
+      console.log(`⚠ VideoHub connection failed: ${error.message} (will retry in background)`);
+    }
 
-    // 3. Initialize HyperDeck connections
-    await hyperdeckManager.connect();
+    // 3. Initialize HyperDeck connections (non-blocking)
+    // Pass device configs from device-config.json (single source of truth)
+    try {
+      const hyperdeckDevices = deviceConfig.getByType('hyperdeck');
+      await hyperdeckManager.connect(hyperdeckDevices.length > 0 ? hyperdeckDevices : null);
+    } catch (error) {
+      console.log(`⚠ HyperDeck connection failed: ${error.message}`);
+    }
 
-    // 4. Initialize Teranex connections
-    await teranexManager.connect();
+    // 4. Initialize Teranex connections (non-blocking)
+    // Pass device configs from device-config.json (single source of truth)
+    try {
+      const teranexDevices = deviceConfig.getByType('teranex');
+      await teranexManager.connect(teranexDevices.length > 0 ? teranexDevices : null);
+    } catch (error) {
+      console.log(`⚠ Teranex connection failed: ${error.message}`);
+    }
 
     // 5. Create HTTP server
     const server = http.createServer(app);

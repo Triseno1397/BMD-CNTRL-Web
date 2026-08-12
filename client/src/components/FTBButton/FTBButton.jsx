@@ -1,34 +1,29 @@
-import { sendCommand } from '../../lib/websocket';
 import './FTBButton.css';
 
 /**
  * Fade to Black button
  * Sends real fadeToBlack command to ATEM
  *
- * @param {WebSocket} ws - WebSocket connection for sending commands
+ * @param {Function} sendCommand - Function to send commands to ATEM
  * @param {boolean} connected - Whether WebSocket is connected
  * @param {boolean} isFullyBlack - Whether FTB is currently active (output is black)
  * @param {boolean} inTransition - Whether FTB transition is in progress
  * @param {number} rate - FTB rate in frames (default 30)
  */
 export function FTBButton({
-  ws,
+  sendCommand,
   connected,
   isFullyBlack = false,
   inTransition = false,
   rate = 30
 }) {
   const handleClick = () => {
-    if (!connected || !ws) {
+    if (!connected) {
       console.warn('Cannot send command: not connected');
       return;
     }
 
-    try {
-      sendCommand(ws, 'fadeToBlack', { me: 0 });
-    } catch (error) {
-      console.error('Failed to send fadeToBlack command:', error);
-    }
+    sendCommand('fadeToBlack', { me: 0 });
   };
 
   const handleKeyDown = (e) => {

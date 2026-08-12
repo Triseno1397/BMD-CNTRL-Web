@@ -30,8 +30,9 @@ class VideoHubMock extends EventEmitter {
 
   /**
    * Initialize mock VideoHub state
+   * @param {Object} deviceConfig - Optional device config from device-config.json (unused in mock)
    */
-  async connect() {
+  async connect(deviceConfig = null) {
     const inputCount = 20;
     const outputCount = 20;
 

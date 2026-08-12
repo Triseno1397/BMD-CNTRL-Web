@@ -211,20 +211,33 @@ class TeranexManager extends EventEmitter {
 
   /**
    * Initialize connections to all configured Teranex units
+   * @param {Array} deviceConfigs - Optional array of device configs from device-config.json
    */
-  async connect() {
+  async connect(deviceConfigs = null) {
     console.log('Teranex: Starting in REAL mode');
 
     await this.loadNames();
 
-    if (config.teranexes.length === 0) {
+    // Use passed device configs (from device-config.json) or fall back to env vars
+    const units = deviceConfigs || config.teranexes;
+
+    if (units.length === 0) {
       console.log('Teranex: No units configured');
       return;
     }
 
-    for (const unitConfig of config.teranexes) {
-      this.initUnit(unitConfig);
-      this.connectUnit(unitConfig.id);
+    console.log(`Teranex: Connecting to ${units.length} unit(s)`);
+
+    for (const unitConfig of units) {
+      // Normalize config format (device-config.json uses slightly different shape)
+      const normalizedConfig = {
+        id: unitConfig.id,
+        index: unitConfig.index ?? parseInt(unitConfig.id.split('_')[1], 10) - 1,
+        name: unitConfig.name,
+        ip: unitConfig.ip
+      };
+      this.initUnit(normalizedConfig);
+      this.connectUnit(normalizedConfig.id);
     }
   }
 
@@ -276,7 +289,10 @@ class TeranexManager extends EventEmitter {
 
     socket.on('error', (error) => {
       console.error(`Teranex [${state.name}] connection error: ${error.message}`);
+      // FIX: Mark as disconnected and notify UI
+      state.connected = false;
       state.connecting = false;
+      this.emit('stateChange', this.getAllState());
     });
 
     console.log(`Connecting to Teranex [${state.name}] at ${state.ip}:${config.teranexPort}...`);
@@ -437,47 +453,96 @@ class TeranexManager extends EventEmitter {
       throw new Error(`Teranex unit ${unitId} not found`);
     }
 
-    if (!state.connected || !socket) {
+    // FIX: Check both socket existence and writability
+    if (!state.connected || !socket || !socket.writable) {
       throw new Error(`Teranex [${state.name}] not connected`);
     }
 
     console.log(`Teranex [${state.name}]: ${command}`, params);
 
+    // FIX: Wrap socket.write in try-catch to handle errors gracefully
+    const safeWrite = (data) => {
+      try {
+        if (!socket.writable) {
+          throw new Error('Socket not writable');
+        }
+        socket.write(data);
+      } catch (err) {
+        state.connected = false;
+        this.emit('stateChange', this.getAllState());
+        throw new Error(`Failed to send command: ${err.message}`);
+      }
+    };
+
+    // Optimistic update helper - updates local state immediately for responsive UI
+    const optimisticUpdate = () => {
+      setTimeout(() => {
+        this.emit('stateChange', this.getAllState());
+      }, 50);
+    };
+
     switch (command) {
       case 'setVideoInput':
-        socket.write(formatCommand('VIDEO INPUT', { videoSource: params.videoSource }));
+        safeWrite(formatCommand('VIDEO INPUT', { videoSource: params.videoSource }));
+        // Optimistic update
+        state.videoInput.videoSource = params.videoSource;
+        optimisticUpdate();
         break;
 
       case 'setAudioInput':
-        socket.write(formatCommand('VIDEO INPUT', { audioSource: params.audioSource }));
+        safeWrite(formatCommand('VIDEO INPUT', { audioSource: params.audioSource }));
+        // Optimistic update
+        state.videoInput.audioSource = params.audioSource;
+        optimisticUpdate();
         break;
 
       case 'setVideoOutput':
-        socket.write(formatCommand('VIDEO OUTPUT', { videoMode: params.videoMode }));
+        safeWrite(formatCommand('VIDEO OUTPUT', { videoMode: params.videoMode }));
+        // Optimistic update
+        state.videoOutput.videoMode = params.videoMode;
+        optimisticUpdate();
         break;
 
       case 'setAspectRatio':
-        socket.write(formatCommand('VIDEO OUTPUT', { aspectRatio: params.aspectRatio }));
+        safeWrite(formatCommand('VIDEO OUTPUT', { aspectRatio: params.aspectRatio }));
+        // Optimistic update
+        state.videoOutput.aspectRatio = params.aspectRatio;
+        optimisticUpdate();
         break;
 
       case 'setTestPattern':
-        socket.write(formatCommand('TEST PATTERN', { output: params.output }));
+        safeWrite(formatCommand('TEST PATTERN', { output: params.output }));
+        // Optimistic update
+        state.testPattern.output = params.output;
+        optimisticUpdate();
         break;
 
       case 'setTestPatternMotion':
-        socket.write(formatCommand('TEST PATTERN', { horizontalMotion: params.enabled }));
+        safeWrite(formatCommand('TEST PATTERN', { horizontalMotion: params.enabled }));
+        // Optimistic update
+        state.testPattern.horizontalMotion = params.enabled;
+        optimisticUpdate();
         break;
 
       case 'setNoSignal':
-        socket.write(formatCommand('TEST PATTERN', { noSignal: params.noSignal }));
+        safeWrite(formatCommand('TEST PATTERN', { noSignal: params.noSignal }));
+        // Optimistic update
+        state.testPattern.noSignal = params.noSignal;
+        optimisticUpdate();
         break;
 
       case 'setOutputSource':
-        socket.write(formatCommand('VIDEO ADVANCED', { outputSource: params.source }));
+        safeWrite(formatCommand('VIDEO ADVANCED', { outputSource: params.source }));
+        // Optimistic update
+        state.videoAdvanced.outputSource = params.source;
+        optimisticUpdate();
         break;
 
       case 'setTransitionRate':
-        socket.write(formatCommand('VIDEO ADVANCED', { transitionRate: params.rate }));
+        safeWrite(formatCommand('VIDEO ADVANCED', { transitionRate: params.rate }));
+        // Optimistic update
+        state.videoAdvanced.transitionRate = params.rate;
+        optimisticUpdate();
         break;
 
       case 'renameUnit':

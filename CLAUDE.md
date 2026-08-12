@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Identity
 
-A professional-grade Blackmagic Design device control application for live production environments. Controls ATEM switchers, VideoHub routers, and HyperDeck recorders from a unified interface. Quality bar: it should feel like Blackmagic Design shipped it.
+A professional-grade Blackmagic Design device control application for live production environments. Controls ATEM switchers, VideoHub routers, HyperDeck recorders, and Teranex converters from a unified interface. Quality bar: it should feel like Blackmagic Design shipped it.
 
 ---
 
@@ -331,6 +331,109 @@ Device configuration is stored in `data/device-config.json` and managed via REST
 
 ---
 
+## Network Discovery Strategy
+
+**Device IPs are dynamic.** Every job/venue has different gear and network configuration. Never assume IPs are static — always discover devices fresh when arriving on-site.
+
+### Deployment Workflow
+1. Connect laptop (server) to the production network
+2. Get iPhone on the same network
+3. Run network discovery to find all BMD devices
+4. Update `device-config.json` with discovered devices
+5. Start/restart server to connect
+
+### BMD Device Ports Reference
+| Device Type | Port | Protocol | Detection Method |
+|-------------|------|----------|------------------|
+| **ATEM** | 9910 | UDP | UDP packet exchange (TCP 9990 also responds for monitoring) |
+| **VideoHub** | 9990 | TCP | Text protocol preamble: `VIDEOHUB DEVICE:` |
+| **HyperDeck** | 9993 | TCP | Text protocol preamble |
+| **Teranex** | 9800 | TCP | Text protocol preamble: `TERANEX DEVICE:` |
+
+### Multi-Phase Discovery Process
+
+**Phase 1 — Passive Discovery**
+```bash
+# Windows
+ipconfig                    # Find active interfaces and subnets
+arp -a                      # Check ARP table for known devices
+```
+
+**Phase 2 — Active Port Scan**
+Scan the local subnet(s) for BMD ports. Use parallel TCP probes with 500ms timeout:
+- Ports: 9800 (Teranex), 9910 (ATEM), 9990 (VideoHub), 9993 (HyperDeck)
+- Batch size: 20-30 concurrent connections
+- Note: ATEM 9910 requires UDP probe, not TCP
+
+**Phase 3 — Protocol Verification**
+For each discovered device, connect and read the protocol preamble to identify:
+```
+# VideoHub/Teranex/HyperDeck — TCP text protocol
+PROTOCOL PREAMBLE:
+Version: X.X
+
+[DEVICE TYPE]:
+Model name: [model]
+Friendly name: [user-assigned name]
+...
+```
+
+**Phase 4 — ATEM UDP Verification**
+ATEM uses UDP on port 9910. Send a connection initiation packet and wait for response:
+```javascript
+const initPacket = Buffer.from([
+  0x10, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00
+]);
+```
+
+### Quick Discovery Commands (Node.js)
+```javascript
+import net from 'net';
+import dgram from 'dgram';
+
+// TCP port check (VideoHub, HyperDeck, Teranex)
+async function checkTcp(ip, port, timeout = 500) {
+  return new Promise(resolve => {
+    const socket = new net.Socket();
+    socket.setTimeout(timeout);
+    socket.on('connect', () => { socket.destroy(); resolve(true); });
+    socket.on('timeout', () => { socket.destroy(); resolve(false); });
+    socket.on('error', () => { socket.destroy(); resolve(false); });
+    socket.connect(port, ip);
+  });
+}
+
+// Read device preamble
+async function readPreamble(ip, port) {
+  return new Promise(resolve => {
+    const socket = new net.Socket();
+    let data = '';
+    socket.setTimeout(3000);
+    socket.on('data', chunk => { data += chunk.toString(); });
+    socket.on('close', () => resolve(data));
+    socket.on('error', () => resolve(null));
+    socket.connect(port, ip);
+  });
+}
+```
+
+### Typical Production Network Layout
+```
+Router/Switch (e.g., 192.168.19.1)
+    │
+    ├── ATEM Constellation (192.168.19.x:9910)
+    ├── VideoHub (192.168.19.x:9990)
+    ├── Teranex units (192.168.19.x:9800)
+    ├── HyperDecks (192.168.19.x:9993)
+    │
+    ├── Laptop/Server (192.168.19.x)
+    └── iPhone (192.168.19.x) → connects to server via WebSocket
+```
+
+---
+
 ## Development Environment
 
 **Platform:** Windows.
@@ -364,7 +467,9 @@ Device configuration is stored in `data/device-config.json` and managed via REST
 | VideoHub lock awareness | ✓ |
 | Mock mode support (ATEM + VideoHub) | ✓ |
 
-### Phase 2 — HyperDeck Master Control
+### Phase 2 — HyperDeck Master Control ✓ (Complete)
+
+**Ready for hardware testing.**
 
 Full deck control for HyperDeck recorders:
 
@@ -380,6 +485,8 @@ Full deck control for HyperDeck recorders:
 | Mock mode support | ✓ |
 
 ### Phase 3 — Teranex AV Control ✓ (Complete)
+
+**Ready for hardware testing.**
 
 Full control for Teranex AV standards converters:
 

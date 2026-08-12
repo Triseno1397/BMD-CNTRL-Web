@@ -16,6 +16,7 @@ class WebSocketManager {
     this.commandHandlers = {};  // { atem: fn, videohub: fn }
     this.deviceStatusProvider = null;  // Function to get device status
     this.configuredDevicesProvider = null;  // Function to get configured device types
+    this.heartbeatInterval = null;  // Interval for ping/pong heartbeat
   }
 
   /**
@@ -88,9 +89,28 @@ class WebSocketManager {
       console.log(`✓ WebSocket server attached to HTTP server`);
     });
 
+    // Start heartbeat interval to detect dead connections
+    this.heartbeatInterval = setInterval(() => {
+      this.clients.forEach((client) => {
+        if (client.isAlive === false) {
+          console.log('Terminating unresponsive WebSocket client');
+          this.clients.delete(client);
+          return client.terminate();
+        }
+        client.isAlive = false;
+        client.ping();
+      });
+    }, 30000); // 30 second heartbeat
+
     this.wss.on('connection', (ws, request) => {
       const clientIp = request.socket.remoteAddress;
       console.log(`WebSocket client connected from ${clientIp}`);
+
+      // Initialize heartbeat tracking
+      ws.isAlive = true;
+      ws.on('pong', () => {
+        ws.isAlive = true;
+      });
 
       // Add client to set
       this.clients.add(ws);
@@ -214,6 +234,19 @@ class WebSocketManager {
    */
   getClientCount() {
     return this.clients.size;
+  }
+
+  /**
+   * Shutdown WebSocket server and cleanup
+   */
+  shutdown() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+    if (this.wss) {
+      this.wss.close();
+    }
   }
 }
 

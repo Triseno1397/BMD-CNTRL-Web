@@ -61,6 +61,26 @@
   color: #ff3333;
 }
 
+/* Failed state: dark red, solid (max reconnection attempts reached) */
+.connection-indicator--failed .connection-indicator__dot {
+  background: #cc0000;
+  box-shadow: 0 0 8px rgba(204, 0, 0, 0.6);
+}
+
+.connection-indicator--failed .connection-indicator__text {
+  color: #cc0000;
+}
+
+/* Error state: same as failed */
+.connection-indicator--error .connection-indicator__dot {
+  background: #cc0000;
+  box-shadow: 0 0 8px rgba(204, 0, 0, 0.6);
+}
+
+.connection-indicator--error .connection-indicator__text {
+  color: #cc0000;
+}
+
 /* Pulsing animation for connecting/reconnecting */
 @keyframes pulse-dot {
   0%, 100% {

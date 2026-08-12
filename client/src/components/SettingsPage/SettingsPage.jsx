@@ -36,6 +36,7 @@ export function SettingsPage({ deviceStatus, onDeviceAdded }) {
   const [scanning, setScanning] = useState(false);
   const [scanResults, setScanResults] = useState([]);
   const [scanError, setScanError] = useState(null);
+  const [scanDebug, setScanDebug] = useState(null);
 
   // Fetch devices on mount
   useEffect(() => {
@@ -145,6 +146,7 @@ export function SettingsPage({ deviceStatus, onDeviceAdded }) {
       setScanning(true);
       setScanError(null);
       setScanResults([]);
+      setScanDebug(null);
 
       const res = await fetch('/api/scan', {
         method: 'POST',
@@ -152,10 +154,14 @@ export function SettingsPage({ deviceStatus, onDeviceAdded }) {
         body: JSON.stringify({})
       });
 
-      if (!res.ok) throw new Error('Network scan failed');
-
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Network scan failed');
+      }
+
       setScanResults(data.found || []);
+      setScanDebug(data.debug || null);
     } catch (err) {
       setScanError(err.message);
     } finally {
@@ -277,6 +283,23 @@ export function SettingsPage({ deviceStatus, onDeviceAdded }) {
 
             {scanError && (
               <p className="settings-scanner__error">{scanError}</p>
+            )}
+
+            {scanDebug && (
+              <div className="settings-scanner__debug">
+                <span>Scanned: {scanDebug.scannedSubnet}</span>
+                {scanDebug.usedMock && <span className="settings-scanner__debug-mock">(Mock Mode)</span>}
+              </div>
+            )}
+
+            {scanDebug && scanResults.length === 0 && !scanning && (
+              <div className="settings-scanner__no-results">
+                <p>No BMD devices found on {scanDebug.scannedSubnet}</p>
+                <p className="settings-scanner__hint">
+                  Ensure devices are powered on and connected to the same network.
+                  ATEM switchers may not be detected (use manual add).
+                </p>
+              </div>
             )}
 
             {scanResults.length > 0 && (

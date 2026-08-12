@@ -1,5 +1,3 @@
-import { sendCommand } from '../../lib/websocket';
-
 /**
  * Individual source button with tap-to-cut behavior
  * - First tap: Select for preview (green highlight)
@@ -9,7 +7,7 @@ import { sendCommand } from '../../lib/websocket';
  * @param {string} inputName - Display name from ATEM state
  * @param {boolean} isProgrammed - True if this input is on program
  * @param {boolean} isPreviewed - True if this input is on preview
- * @param {WebSocket} ws - WebSocket connection for sending commands
+ * @param {Function} sendCommand - Function to send commands to ATEM
  * @param {boolean} connected - Whether WebSocket is connected
  * @param {boolean} isColorBars - True if this is the color bars input (for tooltip)
  */
@@ -18,26 +16,22 @@ export function CameraButton({
   inputName,
   isProgrammed,
   isPreviewed,
-  ws,
+  sendCommand,
   connected,
   isColorBars = false
 }) {
   const handleClick = () => {
-    if (!connected || !ws) {
+    if (!connected) {
       console.warn('Cannot send command: not connected');
       return;
     }
 
-    try {
-      if (isPreviewed) {
-        // Already in preview - execute cut to send to program
-        sendCommand(ws, 'cut', { me: 0 });
-      } else {
-        // Select for preview
-        sendCommand(ws, 'changePreviewInput', { input: inputId, me: 0 });
-      }
-    } catch (error) {
-      console.error('Failed to send command:', error);
+    if (isPreviewed) {
+      // Already in preview - execute cut to send to program
+      sendCommand('cut', { me: 0 });
+    } else {
+      // Select for preview
+      sendCommand('changePreviewInput', { input: inputId, me: 0 });
     }
   };
 

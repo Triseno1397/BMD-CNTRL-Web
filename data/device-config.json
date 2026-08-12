@@ -1,4 +1,33 @@
 {
   "version": 1,
-  "devices": []
+  "devices": [
+    {
+      "id": "atem_1",
+      "type": "atem",
+      "name": "Holley ATEM 4 M/E Constellation 4K",
+      "ip": "192.168.19.24",
+      "port": 9910
+    },
+    {
+      "id": "videohub_1",
+      "type": "videohub",
+      "name": "HOLLEY Blackmagic Videohub 40x40 12G",
+      "ip": "192.168.19.23",
+      "port": 9990
+    },
+    {
+      "id": "teranex_1",
+      "type": "teranex",
+      "name": "Teranex AV2",
+      "ip": "192.168.19.28",
+      "port": 9800
+    },
+    {
+      "id": "teranex_2",
+      "type": "teranex",
+      "name": "Teranex AV",
+      "ip": "192.168.19.29",
+      "port": 9800
+    }
+  ]
 }

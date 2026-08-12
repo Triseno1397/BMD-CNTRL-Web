@@ -110,17 +110,26 @@ class TeranexMockManager extends EventEmitter {
 
   /**
    * Initialize mock units
+   * @param {Array} deviceConfigs - Optional array of device configs from device-config.json
    */
-  async connect() {
+  async connect(deviceConfigs = null) {
     console.log('Teranex: Starting in MOCK mode');
 
     await this.loadNames();
 
-    // Create 2 mock units for testing
-    this.units = [
-      this.createMockUnit(0, 'Main Converter'),
-      this.createMockUnit(1, 'Projector Feed')
-    ];
+    // Use device configs if provided, otherwise create default mock units
+    if (deviceConfigs && deviceConfigs.length > 0) {
+      this.units = deviceConfigs.map((config, index) => {
+        const normalizedIndex = config.index ?? parseInt(config.id.split('_')[1], 10) - 1;
+        return this.createMockUnit(normalizedIndex, config.name);
+      });
+    } else {
+      // Fallback: Create 2 mock units for testing
+      this.units = [
+        this.createMockUnit(0, 'Main Converter'),
+        this.createMockUnit(1, 'Projector Feed')
+      ];
+    }
 
     console.log(`✓ Teranex mock: ${this.units.length} units initialized`);
 
